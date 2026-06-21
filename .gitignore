@@ -1,0 +1,26 @@
+# --- Build output ---
+.gradle/
+build/
+.kotlin/
+*.apk
+!dist/*.apk
+
+# --- Local / machine-specific config ---
+local.properties
+
+# --- IDE ---
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+
+# --- OS junk ---
+.DS_Store
+Thumbs.db
+
+# --- Original reference drop & Tiled editing sources (not used by the build) ---
+code/
+sprites/
+/*.tsx
+/*.tmx
