@@ -2,6 +2,8 @@
 
 > *"The Path of Truth"* — a top-down, pixel-art **arcade survival shooter** built with **libGDX + Kotlin** for Android.
 
+[![Build APK](https://github.com/srcArq/Hodos-Aletheias/actions/workflows/build.yml/badge.svg)](https://github.com/srcArq/Hodos-Aletheias/actions/workflows/build.yml)
+
 Pick a hero, pick a scenario, and survive as long as you can: patrolling satyrs and relentless wraiths close in while your life steadily drains. Chain kills for combo multipliers, grab coins and life, use the portals to escape — and beat your own high score.
 
 > Academic project for the **DAM** (*Desarrollo de Aplicaciones Multiplataforma*) cycle — Android package `dam_mo8_eac4_ex2.conejo_l`.
