@@ -74,6 +74,7 @@ class GameScreen(val game: HodosAletheias) : Screen {
     private val DIFFICULTY_INTERVAL = 12f
     private var difficultyLevel = 0
     private val MAX_SATYRS = 40
+    private val SPAWN_GRACE = 2.5f   // seconds of invulnerability granted at the start of each run
 
     // --- COLLECTIBLE RESPAWN ---
     private val collectibleTemplates = Array<Collectible>()
@@ -168,6 +169,7 @@ class GameScreen(val game: HodosAletheias) : Screen {
         teleports.addAll(mapParser.parseTeleports())
 
         player = Player(384f, 12f, assetManager.getPlayerAnimations())
+        player.grantInvulnerability(SPAWN_GRACE)   // brief shield so the player isn't instantly swarmed at spawn
         difficultyLevel = 0
         createSatyrs()
         createWraiths()
@@ -182,8 +184,10 @@ class GameScreen(val game: HodosAletheias) : Screen {
         Gdx.app.log("GAME_STATE", "Joc Iniciat: char=${CHARS[chosenCharIdx]} map=$chosenMap")
     }
 
-    // Satyr speed grows with the difficulty level (+8% per level)
-    private fun currentSpeedMultiplier(): Float = 1f + difficultyLevel * 0.08f
+    // Satyr speed grows with difficulty (+8% per level) but is capped just below the
+    // player's speed (80) so satyrs can always be out-run; late-game pressure comes from
+    // their growing NUMBERS, not from an unavoidable speed advantage.
+    private fun currentSpeedMultiplier(): Float = (1f + difficultyLevel * 0.08f).coerceAtMost(1.9f)
 
     private fun spawnNewSatyr() {
         if (satyrSpawnPositions.isEmpty) return

@@ -151,6 +151,12 @@ class Player(startX: Float, startY: Float, private val animations: Map<String, A
         }
     }
 
+    // Grants a fixed window of invulnerability (used for the spawn-grace period).
+    fun grantInvulnerability(seconds: Float) {
+        isInvulnerable = true
+        invulnerabilityTimer = seconds
+    }
+
     fun getMuzzlePosition(): Vector2 {
         val centerX = position.x + 16f / 2 // FRAME_WIDTH / 2
         val centerY = position.y + 32f / 2 // FRAME_HEIGHT / 2
