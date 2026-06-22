@@ -44,13 +44,6 @@ class GameAssetManager {
         return Animation(duration, animFrames, Animation.PlayMode.LOOP)
     }
 
-    // Alternative helper that takes an array of frames (used by Satyr)
-    private fun createAnimationFromArray(duration: Float, framesArray: kotlin.Array<TextureRegion>): Animation<TextureRegion> {
-        val gdxArray = Array<TextureRegion>()
-        for (frame in framesArray) gdxArray.add(frame)
-        return Animation(duration, gdxArray, Animation.PlayMode.LOOP)
-    }
-
     // Load the SFX defensively: if any file is missing, the game keeps running without sound
     private fun loadSounds() {
         try {

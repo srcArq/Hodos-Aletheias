@@ -9,7 +9,6 @@ import com.badlogic.gdx.math.Rectangle
 import com.badlogic.gdx.math.Shape2D
 import com.badlogic.gdx.math.Vector2
 import com.badlogic.gdx.utils.Array as GdxArray
-import com.badlogic.gdx.graphics.glutils.ShapeRenderer
 
 class Player(startX: Float, startY: Float, private val animations: Map<String, Animation<TextureRegion>>) {
 
@@ -42,13 +41,10 @@ class Player(startX: Float, startY: Float, private val animations: Map<String, A
     // Animation state
     private var stateTime = 0f
     private var isMoving = false
-    private var currentAnimKey: String = "idle_down"
 
     var isInvulnerable = false
     private var invulnerabilityTimer = 0f
     private val INVULNERABILITY_DURATION = 1.5f
-
-    private val shapeRenderer = ShapeRenderer()
 
     fun update(delta: Float, inputX: Float, inputY: Float, walls: GdxArray<Shape2D>) {
         stateTime += delta
@@ -184,6 +180,6 @@ class Player(startX: Float, startY: Float, private val animations: Map<String, A
     }
 
     fun dispose() {
-        shapeRenderer.dispose()
+        // No GPU resources to release here (sprite sheets are owned by GameAssetManager)
     }
 }

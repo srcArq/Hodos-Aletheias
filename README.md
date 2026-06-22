@@ -124,6 +124,14 @@ Atheleia/
 
 ---
 
+## 🗺️ Roadmap / possible improvements
+
+- Per-map high scores, a run timer and a death/kill counter
+- A pause menu and a sound / music on–off toggle
+- A difficulty selector on the start screen
+- More enemy variety (and a simple boss)
+- Optional English UI (the in-game text is currently Catalan)
+
 ## 📜 Notes
 
 This is an educational project. Feel free to read, build and learn from it.
