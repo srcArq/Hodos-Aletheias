@@ -184,10 +184,10 @@ class GameScreen(val game: HodosAletheias) : Screen {
         Gdx.app.log("GAME_STATE", "Joc Iniciat: char=${CHARS[chosenCharIdx]} map=$chosenMap")
     }
 
-    // Satyr speed grows with difficulty (+8% per level) but is capped just below the
-    // player's speed (80) so satyrs can always be out-run; late-game pressure comes from
-    // their growing NUMBERS, not from an unavoidable speed advantage.
-    private fun currentSpeedMultiplier(): Float = (1f + difficultyLevel * 0.08f).coerceAtMost(1.9f)
+    // Satyrs keep a CONSTANT patrol speed — difficulty no longer accelerates them, so the
+    // game never spirals into escalating-speed chaos. Added challenge over time comes from
+    // enemy numbers and the chasing wraiths, not from faster-and-faster satyrs.
+    private fun currentSpeedMultiplier(): Float = 1f
 
     private fun spawnNewSatyr() {
         if (satyrSpawnPositions.isEmpty) return
