@@ -14,6 +14,16 @@ Pick a hero, pick a scenario, and survive as long as you can: patrolling satyrs 
 
 ---
 
+## 🎯 Why it's fun
+
+- **Pick-up-and-play tension** — one stick to move, one button to fire; a run is a frantic minute (or several) of dodging and shooting.
+- **Risk vs. reward** — your life bar always drains, so you can't just hide: you must push into danger for coins, life and combo multipliers.
+- **Readable, fair threat** — satyrs patrol predictable lanes while wraiths hunt you down; everything is out-runnable, so every death feels earned.
+- **Juicy feedback** — screen shake, hit flashes, floating score pop-ups and an invulnerability blink make every action feel good.
+- **Three biomes, three heroes** — pair a Greek hoplite, a Roman warrior or a golden golem with a Greek overworld or two Roman arenas, each with its own maze.
+
+---
+
 ## 📸 Screenshots
 
 | Character & scenario select | In-game |
@@ -34,7 +44,7 @@ Pick a hero, pick a scenario, and survive as long as you can: patrolling satyrs 
 - 🎭 **3 playable heroes** — the *Hoplita* (Greek hoplite), the *Guerrera* (Roman warrior woman) and the *Golem* (golden golem), each with full 8-direction idle/walk animations.
 - 👹 **2 enemy types** — **satyrs** that patrol (worth +100) and **wraiths** that *chase* the player with per-axis wall-sliding (worth +200).
 - 🔥 **Combo system** — chained kills raise a multiplier up to **×5**; the streak expires if you stop killing.
-- 📈 **Progressive difficulty** — more satyrs spawn and move faster the longer you last.
+- 📈 **Progressive difficulty (fair)** — more satyrs join the longer you last, but enemy speed is constant and always below yours, so the game ramps up by *numbers*, never by unavoidable speed.
 - 🪙 **Collectibles** — coins (+50) and life pickups (+5 life, +25 points) that respawn so the map never empties.
 - ⏳ **Life decay** — your life bar ticks down over time, forcing you to keep moving and scoring.
 - 🌀 **Teleport portals** — paired warp pads to dodge enemies and cross the map.
@@ -72,7 +82,7 @@ You start with **3 health** and a **life bar of 20** that decays one point every
 
 ## 📥 Download & Play
 
-A ready-to-install debug build is included in the repo:
+Grab the latest **[Release (v1.0)](https://github.com/srcArq/Hodos-Aletheias/releases/latest)** — or the copy committed in the repo:
 
 ➡️ **[`dist/HodosAletheias-debug.apk`](dist/HodosAletheias-debug.apk)**
 
@@ -96,12 +106,18 @@ Or open the project in **Android Studio** and run the `android` configuration on
 
 ---
 
-## 🧩 Tech stack
+## 🧩 Technologies
 
-- **Language:** Kotlin 2.1.0
-- **Engine:** libGDX 1.13.1 (`Game`/`Screen`, Scene2D, `TiledMap` / Tiled `.tmx`, `OrthographicCamera`, `FitViewport`)
-- **Build:** Gradle 8.14.3 · Android Gradle Plugin 8.7.3 · compileSdk 35 / minSdk 21
-- **Assets:** procedurally generated with Python + Pillow
+- **Language:** Kotlin 2.1.0 (built with the Android Studio JBR / JDK 21)
+- **Engine:** libGDX 1.13.1
+  - `Game` / `Screen` lifecycle, `OrthographicCamera` + `FitViewport` (320×180 virtual resolution)
+  - **Scene2D** UI for every menu and the in-game HUD (`Stage`, `Table`, `Touchpad`, `Image`, `Label`)
+  - **Tiled** maps (`.tmx`) via `TmxMapLoader` + `OrthogonalTiledMapRenderer`, with selective per-layer rendering for depth
+  - `Animation` sprite sheets, `Sound` SFX, `Pixmap` runtime textures, object **pooling** for bullets, and `Preferences` for the persistent high score
+- **Platform:** Android — `compileSdk 35` / `minSdk 21`, forced landscape, edge-to-edge handled via `WindowInsetsController`
+- **Build:** Gradle 8.14.3 · Android Gradle Plugin 8.7.3 · committed Gradle wrapper
+- **CI:** GitHub Actions builds the debug APK on every push and uploads it as an artifact
+- **Assets:** sprites, tilesets, maps and sound effects are all **procedurally generated** with Python + Pillow
 
 ---
 
@@ -125,6 +141,16 @@ Atheleia/
 ```
 
 ---
+
+## 🔧 Engineering & polish
+
+Passes that hardened the game and the repo:
+
+- **Headless gameplay simulation** — a faithful port of the entity + game-loop logic runs ~5 minutes per map across the full difficulty ramp, parsing the real maps and checking for crashes, NaNs, out-of-bounds and runaway entity counts. Result: **no crashes found**.
+- **Balance fixes from that simulation** — enemy speed is now **constant** (no escalating-speed chaos; satyrs stay slower than the player), and a short **spawn-grace invulnerability** stops the player from being instantly swarmed.
+- **Robustness** — fixed a bullet double-free in the recycling pool and added a player world-bounds clamp.
+- **Clean codebase** — all source comments in English, dead code removed, `.gitattributes` for consistent line endings.
+- **Reproducible builds** — committed Gradle wrapper + CI that builds the APK on every push; published as a tagged Release.
 
 ## 🗺️ Roadmap / possible improvements
 
