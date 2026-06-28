@@ -100,6 +100,10 @@ class GameScreen(val game: HodosAletheias) : Screen {
         Color(1f, 0.90f, 0.78f, 1f),   // Roman temple — torch-warm
         Color(0.82f, 0.86f, 1f, 1f)    // Roman arena — cool dusk
     )
+    private var hitStopTimer = 0f
+    private var prevHealth = 3
+    private var damageFlash = 0f
+    private var pulseT = 0f
 
     // --- WORLD BOUNDS (keeps the player from walking off the map into the void) ---
     private var worldW = 0f
@@ -188,6 +192,7 @@ class GameScreen(val game: HodosAletheias) : Screen {
         lifeDecayTimer = 0f; difficultyTimer = 0f; comboKills = 0; comboTimer = 0f
         collectibleRespawnTimer = 0f; shakeTime = 0f; shakeIntensity = 0f; teleportArmed = true
         for (p in particles) p.active = false; dustTimer = 0f
+        hitStopTimer = 0f; prevHealth = 3; damageFlash = 0f
 
         worldLoaded = true
         state = GameState.RUNNING
@@ -253,6 +258,14 @@ class GameScreen(val game: HodosAletheias) : Screen {
 
         if (state != GameState.RUNNING) {
             hudController.hudStage.draw()
+            return
+        }
+
+        // Hit-stop: freeze the simulation briefly after a kill for extra punch; effects keep animating.
+        if (hitStopTimer > 0f) {
+            hitStopTimer -= delta
+            for (p in particles) p.update(delta)
+            drawWorld(delta)
             return
         }
 
@@ -408,6 +421,8 @@ class GameScreen(val game: HodosAletheias) : Screen {
             spawnFloatingText("+$gained", satyr.position.x, satyr.position.y + 24f, Color.WHITE)
             emit(satyr.position.x + 8f, satyr.position.y + 16f, 10, 0.72f, 0.40f, 0.24f, 70f, 0.55f, 3f, 110f)
             emit(satyr.position.x + 8f, satyr.position.y + 16f, 5, 1f, 1f, 0.9f, 95f, 0.28f, 2f, 0f)
+            flashAt(satyr.position.x + 8f, satyr.position.y + 16f)
+            hitStopTimer = 0.06f
             spawnNewSatyr()
         }
         for (w in wraithsToDestroy) {
@@ -419,6 +434,8 @@ class GameScreen(val game: HodosAletheias) : Screen {
             assetManager.playHit()
             spawnFloatingText("+$gained", w.position.x, w.position.y + 24f, Color.CYAN)
             emit(w.position.x + 8f, w.position.y + 16f, 14, 0.55f, 0.32f, 0.72f, 60f, 0.7f, 3f, 18f)
+            flashAt(w.position.x + 8f, w.position.y + 16f)
+            hitStopTimer = 0.06f
         }
 
         // 4. Update satyrs, wraiths and bullets
@@ -444,6 +461,10 @@ class GameScreen(val game: HodosAletheias) : Screen {
 
         for (p in particles) p.update(delta)
 
+        drawWorld(delta)
+    }
+
+    private fun drawWorld(delta: Float) {
         // --- RENDERING ---
         var camX = player.position.x + 8f
         var camY = player.position.y + 16f
@@ -504,6 +525,14 @@ class GameScreen(val game: HodosAletheias) : Screen {
             renderer?.render(overheadLayers)
         }
 
+        // Damage / low-life red vignette
+        if (player.health < prevHealth) damageFlash = 0.5f
+        prevHealth = player.health
+        damageFlash = (damageFlash - delta).coerceAtLeast(0f)
+        pulseT += delta
+        val lowLife = if (player.lifeScore in 1..5) 0.14f + 0.10f * (0.5f + 0.5f * MathUtils.sin(pulseT * 6f)) else 0f
+        hudController.setDamageVignette(maxOf(damageFlash / 0.5f * 0.55f, lowLife))
+
         // Update labels and draw the HUD
         hudController.updateLabels(player.health, player.lifeScore, player.score, bestScore, comboMultiplier())
         hudController.hudStage.draw()
@@ -522,6 +551,13 @@ class GameScreen(val game: HodosAletheias) : Screen {
     }
 
     private fun biomeTint(idx: Int): Color = biomeTints[idx.coerceIn(0, biomeTints.size - 1)]
+
+    // A brief white "pop" flash at a position (enemy hit-flash on death).
+    private fun flashAt(x: Float, y: Float) {
+        for (p in particles) {
+            if (!p.active) { p.spawn(x, y, 0f, 0f, 0.10f, 22f, 0f, 1f, 1f, 1f); break }
+        }
+    }
 
     // Spawns a burst of pixel particles from the pre-allocated pool (no runtime allocation).
     private fun emit(x: Float, y: Float, count: Int, r: Float, g: Float, b: Float, speed: Float, life: Float, size: Float, gravity: Float) {

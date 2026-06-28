@@ -24,11 +24,11 @@ Procedural primitives (`GameAssetManager.buildPrimitives()`): a 1×1 white pixel
 
 ---
 
-## 🔜 Phase 2 — more game-feel
+## ✅ Implemented — Phase 2: more game-feel
 
-- **Hit-stop** — a 2–3 frame freeze on kills for extra punch (pairs with the existing screen shake).
-- **Enemy hit-flash** — flash the enemy white the moment it's hit.
-- **Damage / low-life vignette** — red screen-edge glow when hurt or when the life bar is low.
+- **Hit-stop** — the simulation freezes for ~0.06 s on each kill (effects keep animating) for extra punch, pairing with the existing screen shake. Implemented by gating the sim and extracting the render into `drawWorld()`.
+- **Enemy hit-flash** — a bright white "pop" flashes at the enemy the moment it dies (on top of the coloured death poof).
+- **Damage / low-life vignette** — a red screen-edge glow that flashes when the player takes a hit and pulses while the life bar is low (HUD overlay driven by `setDamageVignette`).
 
 ## 🔜 Phase 3 — atmosphere & lighting
 

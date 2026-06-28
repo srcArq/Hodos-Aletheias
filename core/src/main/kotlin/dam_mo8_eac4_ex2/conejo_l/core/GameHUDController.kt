@@ -42,6 +42,8 @@ class GameHUDController(
     private var joystickBgTexture: Texture? = null
     private var joystickKnobTexture: Texture? = null
     private var shootButtonTexture: Texture? = null
+    private var vignetteImage: Image? = null
+    private var vignetteTexture: Texture? = null
     private lateinit var uiFont: BitmapFont
     private lateinit var titleFont: BitmapFont
     private lateinit var uiSkin: Skin
@@ -74,6 +76,7 @@ class GameHUDController(
         Gdx.input.inputProcessor = hudStage
         loadUiArt()
         createSkin()
+        makeVignetteTexture()
         createStartScreen()
     }
 
@@ -89,6 +92,24 @@ class GameHUDController(
     private fun bgDrawable(color: Color): TextureRegionDrawable {
         val pm = Pixmap(8, 8, Pixmap.Format.RGBA8888); pm.setColor(color); pm.fill()
         val t = Texture(pm); pm.dispose(); return TextureRegionDrawable(t)
+    }
+
+    // Red edge-glow texture for the damage / low-life vignette (transparent center).
+    private fun makeVignetteTexture() {
+        val w = 32; val h = 18
+        val pm = Pixmap(w, h, Pixmap.Format.RGBA8888)
+        for (y in 0 until h) for (x in 0 until w) {
+            val nx = (x - (w - 1) / 2f) / (w / 2f)
+            val ny = (y - (h - 1) / 2f) / (h / 2f)
+            val d = Math.min(1f, Math.sqrt((nx * nx + ny * ny).toDouble()).toFloat())
+            pm.setColor(0.85f, 0.1f, 0.1f, d * d)
+            pm.drawPixel(x, y)
+        }
+        vignetteTexture = Texture(pm).apply { pm.dispose() }
+    }
+
+    fun setDamageVignette(alpha: Float) {
+        vignetteImage?.color?.a = alpha.coerceIn(0f, 1f)
     }
 
     private fun createSkin() {
@@ -214,6 +235,13 @@ class GameHUDController(
     private fun buildRunningHud() {
         disposeRunningTextures(); hudStage.clear()
         createLabels(); createJoystick(); createShootButton()
+        vignetteTexture?.let { tex ->
+            val v = Image(TextureRegionDrawable(tex)).apply {
+                setFillParent(true); setScaling(Scaling.stretch); touchable = Touchable.disabled; color.a = 0f
+            }
+            vignetteImage = v
+            hudStage.addActor(v)
+        }
     }
 
     private fun createLabels() {
@@ -300,5 +328,6 @@ class GameHUDController(
         backTex?.dispose(); infoTex?.dispose()
         charTex.forEach { it?.dispose() }; mapThumb.forEach { it?.dispose() }
         selBgTex?.dispose(); cellBgTex?.dispose()
+        vignetteTexture?.dispose()
     }
 }
