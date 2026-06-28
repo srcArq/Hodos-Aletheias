@@ -44,7 +44,7 @@ Procedural primitives (`GameAssetManager.buildPrimitives()`): a 1×1 white pixel
 
 - **Hearts** for health and a **segmented life bar** replacing the old text labels (procedurally generated pixel icons).
 - **Damage / low-life red vignette** (Phase 2) layered over the dark focus vignette.
-- **Fade-in** from black at the start of each run.
+- **Fade-in** from black at the start of each run, plus a **fade-from-black transition** on every menu / selector / info / game-over screen change.
 - **Custom pixel bitmap font** — a procedurally generated 5×7 small-caps BMFont (`ui/pixel.fnt` + `pixel.png`, with lowercase/accent aliases) replaces the default libGDX font across all menus and HUD labels; nearest-filtered for crisp scaling, with a safe fallback.
 
 ## 🔜 Remaining — needs new art assets / map authoring
@@ -53,4 +53,4 @@ Best done as a focused, art-directed pass (these require authored sprites or Til
 
 - **New sprite animations**: player attack/thrust, enemy telegraphs (satyr wind-up, wraith lunge) and per-enemy death animations.
 - **Environment**: animated tiles (water, banners, foliage), auto-tiling transitions, more props, subtle parallax.
-- **Menus**: animated title screen, animated character/map previews, pixel screen-transitions (dither/pixelate) between states.
+- **Menus**: animated title screen, animated character/map previews, and richer pixel screen-transitions (dither/pixelate) — a basic fade-from-black between screens is already in.

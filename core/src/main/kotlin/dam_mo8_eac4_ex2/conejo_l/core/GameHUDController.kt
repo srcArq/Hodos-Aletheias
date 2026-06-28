@@ -11,6 +11,7 @@ import com.badlogic.gdx.scenes.scene2d.InputEvent
 import com.badlogic.gdx.scenes.scene2d.Stage
 import com.badlogic.gdx.scenes.scene2d.Touchable
 import com.badlogic.gdx.scenes.scene2d.ui.*
+import com.badlogic.gdx.scenes.scene2d.actions.Actions
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener
 import com.badlogic.gdx.scenes.scene2d.utils.Drawable
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable
@@ -50,6 +51,9 @@ class GameHUDController(
     private lateinit var barOn: Drawable
     private lateinit var barOff: Drawable
     private val hudIconTextures = ArrayList<Texture>()
+    private lateinit var blackDrawable: Drawable
+    private var blackTex: Texture? = null
+    private var fadeOverlay: Image? = null
     private lateinit var uiFont: BitmapFont
     private lateinit var titleFont: BitmapFont
     private lateinit var uiSkin: Skin
@@ -184,10 +188,21 @@ class GameHUDController(
         }
         val selD = bgDrawable(Color(0.92f, 0.74f, 0.22f, 0.55f)); selBgTex = (selD.region.texture); selDrawable = selD
         val celD = bgDrawable(Color(0f, 0f, 0f, 0.40f)); cellBgTex = (celD.region.texture); cellDrawable = celD
+        val blkD = bgDrawable(Color.BLACK); blackTex = blkD.region.texture; blackDrawable = blkD
     }
 
     private fun addBackground(tex: Texture?) {
         tex?.let { hudStage.addActor(Image(TextureRegionDrawable(it)).apply { setFillParent(true); setScaling(Scaling.stretch); touchable = Touchable.disabled }) }
+    }
+
+    // Quick fade-from-black when a screen appears (added last so it covers everything; never blocks input).
+    private fun addTransition() {
+        val ov = Image(blackDrawable).apply {
+            setFillParent(true); setScaling(Scaling.stretch); touchable = Touchable.disabled
+            addAction(Actions.fadeOut(0.28f))
+        }
+        fadeOverlay = ov
+        hudStage.addActor(ov)
     }
 
     private fun makeButton(tex: Texture?, fallback: String, onClick: () -> Unit): Actor {
@@ -219,6 +234,7 @@ class GameHUDController(
             add(makeButton(infoTex, "?") { showInfoScreen() }).size(70f, btnH(infoTex, 70f, 70f))
         }
         hudStage.addActor(infoTable)
+        addTransition()
     }
 
     // --- SELECTION SCREEN ---
@@ -239,6 +255,7 @@ class GameHUDController(
         }
         hudStage.addActor(root)
         addBackButton { createStartScreen() }
+        addTransition()
     }
 
     private fun charCell(i: Int): Actor {
@@ -289,6 +306,7 @@ class GameHUDController(
         }
         hudStage.addActor(table)
         addBackButton { createStartScreen() }
+        addTransition()
     }
 
     // --- GAMEPLAY HUD ---
@@ -379,6 +397,7 @@ class GameHUDController(
         hudStage.addActor(table)
         // The arrow goes to the SELECTOR: pick again / change map after dying
         addBackButton { showSelectScreen() }
+        addTransition()
     }
 
     private fun disposeRunningTextures() {
@@ -398,5 +417,6 @@ class GameHUDController(
         vignetteTexture?.dispose()
         darkVignetteTexture?.dispose()
         hudIconTextures.forEach { it.dispose() }
+        blackTex?.dispose()
     }
 }
