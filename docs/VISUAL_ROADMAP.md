@@ -30,23 +30,27 @@ Procedural primitives (`GameAssetManager.buildPrimitives()`): a 1×1 white pixel
 - **Enemy hit-flash** — a bright white "pop" flashes at the enemy the moment it dies (on top of the coloured death poof).
 - **Damage / low-life vignette** — a red screen-edge glow that flashes when the player takes a hit and pulses while the life bar is low (HUD overlay driven by `setDamageVignette`).
 
-## 🔜 Phase 3 — atmosphere & lighting
+## ✅ Implemented — Phase 3: atmosphere
 
-- Animated **torches / braziers** with flickering light halos.
-- Soft **vignette** for focus; optional gentle **day/night** tint per run.
+- **Torch-light flicker** — the per-biome ambient tint subtly pulses over time for a living-light feel.
+- **Ambient dust motes** — faint particles drift up across the scene.
+- **Dark focus vignette** — a permanent subtle screen-edge darkening (HUD overlay) for mood/focus.
 
-## 🔜 Phase 4 — animation depth
+## ✅ Implemented — Phase 4: attack feel
 
-- A **shoot / thrust** animation for the player (instead of the bullet just appearing).
-- Enemy **telegraphs** (satyr wind-up, wraith lunge) and per-enemy **death animations**.
+- **Muzzle flash** — a bright burst at the spear's spawn point on every shot.
 
-## 🔜 Phase 5 — environment & maps
+## ✅ Implemented — Phase 6: HUD & transitions
 
-- Animated tiles (water, banners, foliage), **auto-tiling** transitions, more props, soft prop shadows, subtle parallax.
+- **Hearts** for health and a **segmented life bar** replacing the old text labels (procedurally generated pixel icons).
+- **Damage / low-life red vignette** (Phase 2) layered over the dark focus vignette.
+- **Fade-in** from black at the start of each run.
 
-## 🔜 Phase 6 — UI / menus / transitions
+## 🔜 Remaining — needs new art assets / map authoring
 
-- A custom **pixel bitmap font** (replacing the default font).
-- **Hearts** + a pixel **life bar** instead of text labels; a combo meter with growing flames.
-- Pixel-art frames / animated button states; **pixel transitions** (dither / pixelate fade) between menu, game, death and teleport.
-- Animated title screen and animated character/map previews in the selector.
+Best done as a focused, art-directed pass (these require authored sprites/fonts or Tiled/tileset changes):
+
+- **Custom pixel bitmap font** (replacing the default libGDX font).
+- **New sprite animations**: player attack/thrust, enemy telegraphs (satyr wind-up, wraith lunge) and per-enemy death animations.
+- **Environment**: animated tiles (water, banners, foliage), auto-tiling transitions, more props, subtle parallax.
+- **Menus**: animated title screen, animated character/map previews, pixel screen-transitions (dither/pixelate) between states.

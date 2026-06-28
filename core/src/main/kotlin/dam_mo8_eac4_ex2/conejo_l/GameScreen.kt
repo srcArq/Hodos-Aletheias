@@ -104,6 +104,9 @@ class GameScreen(val game: HodosAletheias) : Screen {
     private var prevHealth = 3
     private var damageFlash = 0f
     private var pulseT = 0f
+    private var ambientT = 0f
+    private var dustMoteTimer = 0f
+    private var fadeTimer = 0f
 
     // --- WORLD BOUNDS (keeps the player from walking off the map into the void) ---
     private var worldW = 0f
@@ -193,6 +196,7 @@ class GameScreen(val game: HodosAletheias) : Screen {
         collectibleRespawnTimer = 0f; shakeTime = 0f; shakeIntensity = 0f; teleportArmed = true
         for (p in particles) p.active = false; dustTimer = 0f
         hitStopTimer = 0f; prevHealth = 3; damageFlash = 0f
+        ambientT = 0f; dustMoteTimer = 0f; fadeTimer = 0.45f
 
         worldLoaded = true
         state = GameState.RUNNING
@@ -243,9 +247,11 @@ class GameScreen(val game: HodosAletheias) : Screen {
         player.let { p ->
             val newBullet = bulletPool.obtain()
             if (newBullet != null) {
-                newBullet.init(p.getMuzzlePosition(), p.currentDirection)
+                val muzzle = p.getMuzzlePosition()
+                newBullet.init(muzzle, p.currentDirection)
                 activeBullets.add(newBullet)
                 assetManager.playShoot()
+                emit(muzzle.x, muzzle.y, 6, 1f, 0.95f, 0.6f, 60f, 0.18f, 2f, 0f)  // muzzle flash
             }
         }
     }
@@ -485,11 +491,26 @@ class GameScreen(val game: HodosAletheias) : Screen {
         batch?.begin()
         val b = batch!!
 
-        // Biome ambient wash — tints the map behind the actors; the actors draw on top and stay crisp
+        // Biome ambient wash with a subtle torch-light flicker
+        ambientT += delta
         val tint = biomeTint(chosenMapIdx)
-        b.setColor(tint.r, tint.g, tint.b, 0.14f)
+        val flick = (0.14f + 0.025f * MathUtils.sin(ambientT * 7f) + 0.015f * MathUtils.sin(ambientT * 13f)).coerceIn(0.08f, 0.20f)
+        b.setColor(tint.r, tint.g, tint.b, flick)
         b.draw(assetManager.pixelRegion, camX - camera!!.viewportWidth / 2f, camY - camera!!.viewportHeight / 2f,
             camera!!.viewportWidth, camera!!.viewportHeight)
+        // Ambient dust motes drifting up
+        dustMoteTimer -= delta
+        if (dustMoteTimer <= 0f) {
+            dustMoteTimer = 0.4f
+            for (p in particles) {
+                if (!p.active) {
+                    val mx = camX + MathUtils.random(-camera!!.viewportWidth / 2f, camera!!.viewportWidth / 2f)
+                    val my = camY + MathUtils.random(-camera!!.viewportHeight / 2f, camera!!.viewportHeight / 2f)
+                    p.spawn(mx, my, MathUtils.random(-3f, 3f), MathUtils.random(4f, 9f), MathUtils.random(1.4f, 2.4f), 1.5f, 0f, 1f, 0.96f, 0.85f)
+                    break
+                }
+            }
+        }
 
         // Blob shadows under the actors
         b.setColor(0f, 0f, 0f, 0.32f)
@@ -507,6 +528,15 @@ class GameScreen(val game: HodosAletheias) : Screen {
         // Pixel particles on top of the actors
         for (p in particles) p.draw(b, assetManager.pixelRegion)
         b.setColor(1f, 1f, 1f, 1f)
+
+        // Fade-in from black at the start of a run
+        if (fadeTimer > 0f) {
+            fadeTimer -= delta
+            b.setColor(0f, 0f, 0f, (fadeTimer / 0.45f).coerceIn(0f, 1f))
+            b.draw(assetManager.pixelRegion, camX - camera!!.viewportWidth / 2f, camY - camera!!.viewportHeight / 2f,
+                camera!!.viewportWidth, camera!!.viewportHeight)
+            b.setColor(1f, 1f, 1f, 1f)
+        }
 
         // Floating texts (+points, +life) in world coordinates
         updateFloatingTexts(delta)

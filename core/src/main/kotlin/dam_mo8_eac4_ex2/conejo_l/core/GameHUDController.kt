@@ -32,8 +32,6 @@ class GameHUDController(
     lateinit var touchpad: Touchpad
 
     // HUD labels
-    private lateinit var healthLabel: Label
-    private lateinit var lifeScoreLabel: Label
     private lateinit var scoreLabel: Label
     private lateinit var bestLabel: Label
     private lateinit var comboLabel: Label
@@ -44,6 +42,14 @@ class GameHUDController(
     private var shootButtonTexture: Texture? = null
     private var vignetteImage: Image? = null
     private var vignetteTexture: Texture? = null
+    private var darkVignetteTexture: Texture? = null
+    private val heartImages = arrayOfNulls<Image>(3)
+    private val lifeSegImages = arrayOfNulls<Image>(10)
+    private lateinit var heartFull: Drawable
+    private lateinit var heartEmpty: Drawable
+    private lateinit var barOn: Drawable
+    private lateinit var barOff: Drawable
+    private val hudIconTextures = ArrayList<Texture>()
     private lateinit var uiFont: BitmapFont
     private lateinit var titleFont: BitmapFont
     private lateinit var uiSkin: Skin
@@ -77,6 +83,8 @@ class GameHUDController(
         loadUiArt()
         createSkin()
         makeVignetteTexture()
+        makeDarkVignetteTexture()
+        makeHudIcons()
         createStartScreen()
     }
 
@@ -110,6 +118,45 @@ class GameHUDController(
 
     fun setDamageVignette(alpha: Float) {
         vignetteImage?.color?.a = alpha.coerceIn(0f, 1f)
+    }
+
+    // Always-on dark edge vignette for focus / mood.
+    private fun makeDarkVignetteTexture() {
+        val w = 32; val h = 18
+        val pm = Pixmap(w, h, Pixmap.Format.RGBA8888)
+        for (y in 0 until h) for (x in 0 until w) {
+            val nx = (x - (w - 1) / 2f) / (w / 2f)
+            val ny = (y - (h - 1) / 2f) / (h / 2f)
+            val d = Math.min(1f, Math.sqrt((nx * nx + ny * ny).toDouble()).toFloat())
+            pm.setColor(0f, 0f, 0f, d * d * 0.6f)
+            pm.drawPixel(x, y)
+        }
+        darkVignetteTexture = Texture(pm).apply { pm.dispose() }
+    }
+
+    // Pixel HUD icons: hearts (health) and life-bar segments.
+    private fun makeHudIcons() {
+        val heart = arrayOf("0110110", "1111111", "1111111", "0111110", "0011100", "0001000")
+        heartFull = heartDrawable(heart, Color(0.90f, 0.20f, 0.25f, 1f))
+        heartEmpty = heartDrawable(heart, Color(0.25f, 0.25f, 0.30f, 1f))
+        barOn = solidDrawable(Color(0.30f, 0.85f, 0.35f, 1f))
+        barOff = solidDrawable(Color(0.20f, 0.20f, 0.25f, 0.85f))
+    }
+
+    private fun heartDrawable(rows: Array<String>, color: Color): Drawable {
+        val w = rows[0].length; val h = rows.size
+        val pm = Pixmap(w, h, Pixmap.Format.RGBA8888)
+        pm.setColor(0f, 0f, 0f, 0f); pm.fill()
+        pm.setColor(color)
+        for (y in 0 until h) for (x in 0 until w) if (rows[y][x] == '1') pm.drawPixel(x, y)
+        val t = Texture(pm).apply { pm.dispose() }; hudIconTextures.add(t)
+        return TextureRegionDrawable(TextureRegion(t))
+    }
+
+    private fun solidDrawable(color: Color): Drawable {
+        val pm = Pixmap(4, 4, Pixmap.Format.RGBA8888); pm.setColor(color); pm.fill()
+        val t = Texture(pm).apply { pm.dispose() }; hudIconTextures.add(t)
+        return TextureRegionDrawable(TextureRegion(t))
     }
 
     private fun createSkin() {
@@ -234,6 +281,11 @@ class GameHUDController(
     // --- GAMEPLAY HUD ---
     private fun buildRunningHud() {
         disposeRunningTextures(); hudStage.clear()
+        darkVignetteTexture?.let { tex ->
+            hudStage.addActor(Image(TextureRegionDrawable(tex)).apply {
+                setFillParent(true); setScaling(Scaling.stretch); touchable = Touchable.disabled; color.a = 0.5f
+            })
+        }
         createLabels(); createJoystick(); createShootButton()
         vignetteTexture?.let { tex ->
             val v = Image(TextureRegionDrawable(tex)).apply {
@@ -245,17 +297,19 @@ class GameHUDController(
     }
 
     private fun createLabels() {
-        healthLabel = Label("Salut: 3", uiSkin, "default")
-        lifeScoreLabel = Label("Vida: 20", uiSkin, "default")
         scoreLabel = Label("Punts: 0", uiSkin, "default").apply { setAlignment(Align.right) }
         bestLabel = Label("Record: 0", uiSkin, "default").apply { setAlignment(Align.right) }
         comboLabel = Label("", uiSkin, "default").apply { setAlignment(Align.center); color = Color.ORANGE }
+        val hearts = Table()
+        for (i in 0..2) { val img = Image(heartFull); heartImages[i] = img; hearts.add(img).size(32f, 28f).padRight(4f) }
+        val lifeBar = Table()
+        for (i in 0..9) { val img = Image(barOn); lifeSegImages[i] = img; lifeBar.add(img).size(13f, 13f).padRight(2f) }
         val topTable = Table().apply {
             setFillParent(true); top().pad(12f)
-            add(healthLabel).expandX().left()
+            add(hearts).expandX().left()
             add(comboLabel).expandX().center()
             add(scoreLabel).expandX().right().row()
-            add(lifeScoreLabel).left().padTop(4f)
+            add(lifeBar).left().padTop(6f)
             add(Label("", uiSkin, "default")).expandX()
             add(bestLabel).right().padTop(4f)
         }
@@ -288,13 +342,13 @@ class GameHUDController(
     }
 
     fun updateLabels(health: Int, lifeScore: Int, score: Int, best: Int, comboMultiplier: Int) {
-        if (!::healthLabel.isInitialized) return
-        healthLabel.setText("Salut: $health")
-        lifeScoreLabel.setText("Vida: $lifeScore")
+        if (heartImages[0] == null) return
+        for (i in 0..2) heartImages[i]?.drawable = if (i < health) heartFull else heartEmpty
+        val filled = (lifeScore + 1) / 2
+        for (i in 0..9) lifeSegImages[i]?.drawable = if (i < filled) barOn else barOff
         scoreLabel.setText("Punts: $score")
         bestLabel.setText("Record: $best")
         comboLabel.setText(if (comboMultiplier > 1) "COMBO x$comboMultiplier" else "")
-        lifeScoreLabel.color = when { lifeScore < 5 -> Color.RED; lifeScore < 10 -> Color.YELLOW; else -> Color.WHITE }
     }
 
     // --- GAME OVER (the background already has the "GAME OVER" title and frame; don't duplicate it) ---
@@ -329,5 +383,7 @@ class GameHUDController(
         charTex.forEach { it?.dispose() }; mapThumb.forEach { it?.dispose() }
         selBgTex?.dispose(); cellBgTex?.dispose()
         vignetteTexture?.dispose()
+        darkVignetteTexture?.dispose()
+        hudIconTextures.forEach { it.dispose() }
     }
 }
