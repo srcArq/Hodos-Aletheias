@@ -24,6 +24,7 @@ import dam_mo8_eac4_ex2.conejo_l.core.Teleport
 import dam_mo8_eac4_ex2.conejo_l.entities.Bullet
 import dam_mo8_eac4_ex2.conejo_l.entities.Satyr
 import dam_mo8_eac4_ex2.conejo_l.entities.Wraith
+import dam_mo8_eac4_ex2.conejo_l.entities.Particle
 import java.util.Random
 
 class GameScreen(val game: HodosAletheias) : Screen {
@@ -90,6 +91,15 @@ class GameScreen(val game: HodosAletheias) : Screen {
     private var shakeIntensity = 0f
     private val floatingTexts = Array<FloatingText>()
     private var font: BitmapFont? = null
+
+    // --- PARTICLES & BIOME TINT (visual juice) ---
+    private val particles = List(240) { Particle() }
+    private var dustTimer = 0f
+    private val biomeTints = arrayOf(
+        Color(1f, 0.97f, 0.88f, 1f),   // Greek overworld — warm
+        Color(1f, 0.90f, 0.78f, 1f),   // Roman temple — torch-warm
+        Color(0.82f, 0.86f, 1f, 1f)    // Roman arena — cool dusk
+    )
 
     // --- WORLD BOUNDS (keeps the player from walking off the map into the void) ---
     private var worldW = 0f
@@ -177,6 +187,7 @@ class GameScreen(val game: HodosAletheias) : Screen {
 
         lifeDecayTimer = 0f; difficultyTimer = 0f; comboKills = 0; comboTimer = 0f
         collectibleRespawnTimer = 0f; shakeTime = 0f; shakeIntensity = 0f; teleportArmed = true
+        for (p in particles) p.active = false; dustTimer = 0f
 
         worldLoaded = true
         state = GameState.RUNNING
@@ -306,6 +317,13 @@ class GameScreen(val game: HodosAletheias) : Screen {
             player.bounds.setPosition(player.position.x + 4f, player.position.y)
         }
 
+        // Footstep dust while moving
+        dustTimer -= delta
+        if ((kotlin.math.abs(inputX) > 0.25f || kotlin.math.abs(inputY) > 0.25f) && dustTimer <= 0f) {
+            dustTimer = 0.11f
+            emit(player.position.x + 8f, player.position.y + 2f, 2, 0.82f, 0.78f, 0.68f, 14f, 0.32f, 2f, 6f)
+        }
+
         // --- TELEPORTS --- (must leave every pad to re-arm: prevents ping-pong)
         val onPad = teleports.any { Intersector.overlaps(player.bounds, it.rect) }
         if (!onPad) teleportArmed = true
@@ -321,6 +339,7 @@ class GameScreen(val game: HodosAletheias) : Screen {
                         teleportArmed = false
                         assetManager.playTeleport()
                         spawnFloatingText("WARP", dx, dy + 34f, Color.CYAN)
+                        emit(dx + 8f, dy + 16f, 18, 0f, 0.9f, 1f, 80f, 0.55f, 2f, 0f)
                         Gdx.app.log("TELEPORT", "Warp link ${tp.link} -> (${dx.toInt()}, ${dy.toInt()})")
                         break
                     }
@@ -337,9 +356,11 @@ class GameScreen(val game: HodosAletheias) : Screen {
                 if (item.type == Collectible.Type.COIN) {
                     assetManager.playCoin()
                     spawnFloatingText("+${Player.COIN_SCORE}", item.bounds.x, item.bounds.y + 16f, Color.GOLD)
+                    emit(item.bounds.x + 8f, item.bounds.y + 8f, 8, 1f, 0.85f, 0.25f, 55f, 0.45f, 2f, 60f)
                 } else {
                     assetManager.playLife()
                     spawnFloatingText("+5 vida", item.bounds.x, item.bounds.y + 16f, Color.GREEN)
+                    emit(item.bounds.x + 8f, item.bounds.y + 8f, 8, 0.4f, 1f, 0.45f, 50f, 0.5f, 2f, 40f)
                 }
             }
         }
@@ -385,6 +406,8 @@ class GameScreen(val game: HodosAletheias) : Screen {
             player.score += gained
             assetManager.playHit()
             spawnFloatingText("+$gained", satyr.position.x, satyr.position.y + 24f, Color.WHITE)
+            emit(satyr.position.x + 8f, satyr.position.y + 16f, 10, 0.72f, 0.40f, 0.24f, 70f, 0.55f, 3f, 110f)
+            emit(satyr.position.x + 8f, satyr.position.y + 16f, 5, 1f, 1f, 0.9f, 95f, 0.28f, 2f, 0f)
             spawnNewSatyr()
         }
         for (w in wraithsToDestroy) {
@@ -395,6 +418,7 @@ class GameScreen(val game: HodosAletheias) : Screen {
             player.score += gained
             assetManager.playHit()
             spawnFloatingText("+$gained", w.position.x, w.position.y + 24f, Color.CYAN)
+            emit(w.position.x + 8f, w.position.y + 16f, 14, 0.55f, 0.32f, 0.72f, 60f, 0.7f, 3f, 18f)
         }
 
         // 4. Update satyrs, wraiths and bullets
@@ -418,6 +442,8 @@ class GameScreen(val game: HodosAletheias) : Screen {
             }
         }
 
+        for (p in particles) p.update(delta)
+
         // --- RENDERING ---
         var camX = player.position.x + 8f
         var camY = player.position.y + 16f
@@ -436,12 +462,30 @@ class GameScreen(val game: HodosAletheias) : Screen {
 
         batch?.projectionMatrix = camera!!.combined
         batch?.begin()
+        val b = batch!!
+
+        // Biome ambient wash — tints the map behind the actors; the actors draw on top and stay crisp
+        val tint = biomeTint(chosenMapIdx)
+        b.setColor(tint.r, tint.g, tint.b, 0.14f)
+        b.draw(assetManager.pixelRegion, camX - camera!!.viewportWidth / 2f, camY - camera!!.viewportHeight / 2f,
+            camera!!.viewportWidth, camera!!.viewportHeight)
+
+        // Blob shadows under the actors
+        b.setColor(0f, 0f, 0f, 0.32f)
+        for (satyr in satyrs) b.draw(assetManager.shadowRegion, satyr.position.x - 2f, satyr.position.y - 1f, 20f, 8f)
+        for (w in wraiths) b.draw(assetManager.shadowRegion, w.position.x - 2f, w.position.y - 1f, 20f, 8f)
+        b.draw(assetManager.shadowRegion, player.position.x - 2f, player.position.y - 1f, 20f, 8f)
+        b.setColor(1f, 1f, 1f, 1f)
 
         for (item in collectibles) item.draw(batch!!)
         for (satyr in satyrs) satyr.draw(batch!!)
         for (w in wraiths) w.draw(batch!!)
         for (bullet in activeBullets) bullet.draw(batch!!)
         player.draw(batch!!)
+
+        // Pixel particles on top of the actors
+        for (p in particles) p.draw(b, assetManager.pixelRegion)
+        b.setColor(1f, 1f, 1f, 1f)
 
         // Floating texts (+points, +life) in world coordinates
         updateFloatingTexts(delta)
@@ -475,6 +519,24 @@ class GameScreen(val game: HodosAletheias) : Screen {
 
     private fun spawnFloatingText(text: String, x: Float, y: Float, color: Color) {
         floatingTexts.add(FloatingText(text, x, y, color))
+    }
+
+    private fun biomeTint(idx: Int): Color = biomeTints[idx.coerceIn(0, biomeTints.size - 1)]
+
+    // Spawns a burst of pixel particles from the pre-allocated pool (no runtime allocation).
+    private fun emit(x: Float, y: Float, count: Int, r: Float, g: Float, b: Float, speed: Float, life: Float, size: Float, gravity: Float) {
+        var spawned = 0
+        for (p in particles) {
+            if (spawned >= count) break
+            if (!p.active) {
+                val ang = MathUtils.random(0f, MathUtils.PI2)
+                val spd = MathUtils.random(speed * 0.35f, speed)
+                p.spawn(x, y, MathUtils.cos(ang) * spd, MathUtils.sin(ang) * spd,
+                        MathUtils.random(life * 0.6f, life), MathUtils.random(size * 0.7f, size), gravity,
+                        r + MathUtils.random(-0.06f, 0.06f), g + MathUtils.random(-0.06f, 0.06f), b + MathUtils.random(-0.06f, 0.06f))
+                spawned++
+            }
+        }
     }
 
     private fun updateFloatingTexts(delta: Float) {

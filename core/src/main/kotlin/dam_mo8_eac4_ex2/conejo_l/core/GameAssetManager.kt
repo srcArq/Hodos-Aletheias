@@ -27,6 +27,12 @@ class GameAssetManager {
     lateinit var coinRegion: TextureRegion
     lateinit var lifeRegion: TextureRegion
 
+    // Procedural primitives for the visual effects (particles, overlays, shadows)
+    lateinit var pixelRegion: TextureRegion
+    lateinit var shadowRegion: TextureRegion
+    private var pixelTexture: Texture? = null
+    private var shadowTexture: Texture? = null
+
     // --- SOUNDS (SFX) ---
     private var shootSound: Sound? = null
     private var hitSound: Sound? = null
@@ -69,8 +75,28 @@ class GameAssetManager {
     fun playStart()    { startSound?.play(0.6f) }
     fun playTeleport() { teleportSound?.play(0.6f) }
 
+    // Builds the 1x1 white pixel (particles/overlays) and a soft elliptical blob shadow.
+    private fun buildPrimitives() {
+        val wp = Pixmap(1, 1, Pixmap.Format.RGBA8888).apply { setColor(Color.WHITE); fill() }
+        pixelTexture = Texture(wp).apply { wp.dispose() }
+        pixelRegion = TextureRegion(pixelTexture)
+
+        val w = 16; val h = 8
+        val sp = Pixmap(w, h, Pixmap.Format.RGBA8888)
+        for (y in 0 until h) for (x in 0 until w) {
+            val nx = (x - (w - 1) / 2f) / (w / 2f)
+            val ny = (y - (h - 1) / 2f) / (h / 2f)
+            val d = nx * nx + ny * ny
+            val a = if (d < 1f) (1f - d) * 0.45f else 0f
+            sp.setColor(0f, 0f, 0f, a); sp.drawPixel(x, y)
+        }
+        shadowTexture = Texture(sp).apply { sp.dispose() }
+        shadowRegion = TextureRegion(shadowTexture)
+    }
+
     fun loadAllAssets(charPath: String): Map<String, Animation<TextureRegion>> {
         loadSounds()
+        buildPrimitives()
         try {
             // 1. COLLECTIBLES & SPEAR
             collectiblesTexture = Texture(Gdx.files.internal("objects/collectibles.png"))
@@ -145,6 +171,8 @@ class GameAssetManager {
     }
 
     fun dispose() {
+        pixelTexture?.dispose()
+        shadowTexture?.dispose()
         if (::collectiblesTexture.isInitialized) collectiblesTexture.dispose()
         if (::satyrTexture.isInitialized) satyrTexture.dispose()
         if (::wraithTexture.isInitialized) wraithTexture.dispose()
