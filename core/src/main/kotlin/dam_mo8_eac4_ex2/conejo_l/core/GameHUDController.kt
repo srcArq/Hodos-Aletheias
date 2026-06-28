@@ -76,8 +76,8 @@ class GameHUDController(
     private lateinit var cellDrawable: Drawable
 
     init {
-        uiFont = BitmapFont().apply { data.setScale(1.5f) }
-        titleFont = BitmapFont().apply { data.setScale(2.5f) }
+        uiFont = loadPixelFont(3f)
+        titleFont = loadPixelFont(5f)
         hudStage = Stage(FitViewport(viewportWidth, viewportHeight))
         Gdx.input.inputProcessor = hudStage
         loadUiArt()
@@ -86,6 +86,19 @@ class GameHUDController(
         makeDarkVignetteTexture()
         makeHudIcons()
         createStartScreen()
+    }
+
+    // Loads the custom pixel font (BMFont) with nearest filtering; falls back to the default font.
+    private fun loadPixelFont(scale: Float): BitmapFont {
+        return try {
+            val f = BitmapFont(Gdx.files.internal("ui/pixel.fnt"))
+            f.region.texture.setFilter(Texture.TextureFilter.Nearest, Texture.TextureFilter.Nearest)
+            f.data.setScale(scale)
+            f.setUseIntegerPositions(false)
+            f
+        } catch (e: Exception) {
+            BitmapFont().apply { data.setScale(scale) }
+        }
     }
 
     private fun loadUiArt() {
